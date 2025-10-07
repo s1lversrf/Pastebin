@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.UUID;
 
@@ -33,5 +33,28 @@ public class S3Service {
         amazonS3.putObject(bucketName, uuid.toString(), inputStream, objectMetadata);
 
         return uuid.toString();
+    }
+
+    public String getPaste(String key) { //TODO: Refactor exceptions handling
+        S3Object s3Object = amazonS3.getObject(bucketName, key);
+        S3ObjectInputStream inputStream = s3Object.getObjectContent();
+        String content = null;
+        try {
+            content = new String(inputStream.readAllBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                inputStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return content;
+    }
+
+    public void deletePaste(String key) {
+        amazonS3.deleteObject(bucketName, key);
     }
 }
