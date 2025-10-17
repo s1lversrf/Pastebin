@@ -41,6 +41,35 @@ public class Controller {
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
                     .build();
+        } catch (RuntimeException e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build();
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<String> updatePaste(@PathVariable String id, @RequestBody String newContent){
+        if(newContent == null || newContent.isBlank()){
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .build();
+        }
+
+        try {
+            String content = pasteService.updatePaste(id, newContent);
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(content);
+        }
+        catch (NotFoundException e){
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .build();
+        } catch (RuntimeException e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build();
         }
     }
 

@@ -24,17 +24,24 @@ public class PasteService {
         return id;
     }
 
-    public Paste getPaste(String id){
-        return repository.findById(id).orElse(null);
+    public Paste getPaste(String id) throws NotFoundException {
+        return repository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Paste not found"));
     }
 
-    public String getPasteContent(String id) throws NotFoundException { //TODO: Refactor exceptions handling
+    public String getPasteContent(String id) throws RuntimeException {
         Paste paste = getPaste(id);
-        if(paste == null){
-            throw new NotFoundException("Paste not found");
-        }
 
         return s3Service.getPaste(paste.getS3Key());
+    }
+
+    public String updatePaste(String id, String content) throws NotFoundException {
+        Paste paste = getPaste(id);
+
+        s3Service.updatePaste(paste.getS3Key(), content);
+        repository.save(paste);
+
+        return content;
     }
 
     public void deletePaste(String id) throws NotFoundException {

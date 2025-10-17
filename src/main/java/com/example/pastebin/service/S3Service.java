@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 @Service
@@ -35,23 +36,21 @@ public class S3Service {
         return uuid.toString();
     }
 
-    public String getPaste(String key) { //TODO: Refactor exceptions handling
-        S3Object s3Object = amazonS3.getObject(bucketName, key);
-        S3ObjectInputStream inputStream = s3Object.getObjectContent();
-        String content = null;
-        try {
-            content = new String(inputStream.readAllBytes());
+    public String getPaste(String key) {
+        try(S3ObjectInputStream inputStream = amazonS3.getObject(bucketName, key).getObjectContent()){
+            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                inputStream.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            throw new RuntimeException("Failed to read paste from S3 with key: " + key);
         }
+    }
 
-        return content;
+    public void updatePaste(String key, String content) throws RuntimeException {
+        InputStream inputStream = new ByteArrayInputStream(content.getBytes());
+
+        ObjectMetadata objectMetadata = new ObjectMetadata();
+        objectMetadata.setContentType("text/plain");
+
+        amazonS3.putObject(bucketName, key, inputStream, objectMetadata);
     }
 
     public void deletePaste(String key) {
