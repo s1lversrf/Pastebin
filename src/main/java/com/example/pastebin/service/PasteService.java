@@ -6,6 +6,8 @@ import com.example.pastebin.repository.PasteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class PasteService {
@@ -13,15 +15,16 @@ public class PasteService {
     private final IdGeneratorService idGeneratorService;
     private final S3Service s3Service;
 
-    public String addPaste(String content){
+    public Paste addPaste(String content){
         String id = idGeneratorService.generateId();
         if(repository.existsById(id)){
             addPaste(content);
         }
         String s3key = s3Service.uploadPaste(content);
-        repository.save(new Paste(id, s3key));
+        Paste paste = new Paste(id, s3key);
+        repository.save(paste);
 
-        return id;
+        return paste;
     }
 
     public Paste getPaste(String id) throws NotFoundException {
@@ -35,13 +38,14 @@ public class PasteService {
         return s3Service.getPaste(paste.getS3Key());
     }
 
-    public String updatePaste(String id, String content) throws NotFoundException {
+    public Paste updatePaste(String id, String content) throws NotFoundException {
         Paste paste = getPaste(id);
 
         s3Service.updatePaste(paste.getS3Key(), content);
+        paste.setUpdatedAt(LocalDateTime.now());
         repository.save(paste);
 
-        return content;
+        return paste;
     }
 
     public void deletePaste(String id) throws NotFoundException {

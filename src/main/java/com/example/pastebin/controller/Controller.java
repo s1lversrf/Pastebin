@@ -1,6 +1,8 @@
 package com.example.pastebin.controller;
 
 import com.amazonaws.services.kms.model.NotFoundException;
+import com.example.pastebin.dto.Paste;
+import com.example.pastebin.dto.PasteResponse;
 import com.example.pastebin.service.PasteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -14,28 +16,40 @@ public class Controller {
     private final PasteService pasteService;
 
     @PostMapping
-    public ResponseEntity<String> addPaste(@RequestBody String content){
+    public ResponseEntity<PasteResponse> addPaste(@RequestBody String content){
         if(content == null || content.isBlank()){
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
                     .build();
         }
 
-        String id = pasteService.addPaste(content);
+        Paste paste = pasteService.addPaste(content);
+        PasteResponse pasteResponse = new PasteResponse(
+                paste.getId(),
+                content,
+                paste.getCreatedAt(),
+                paste.getUpdatedAt());
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .header("Location", "/pastebin/" + id)
-                .body(id);
+                .header("Location", "/pastebin/" + paste.getId())
+                .body(pasteResponse);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<String> getPaste(@PathVariable String id){
+    public ResponseEntity<PasteResponse> getPaste(@PathVariable String id){
         try {
+            Paste paste = pasteService.getPaste(id);
             String content = pasteService.getPasteContent(id);
+            PasteResponse pasteResponse = new PasteResponse(
+                    id,
+                    content,
+                    paste.getCreatedAt(),
+                    paste.getUpdatedAt());
+
             return ResponseEntity
                     .status(HttpStatus.OK)
-                    .body(content);
+                    .body(pasteResponse);
         }
         catch (NotFoundException e){
             return ResponseEntity
@@ -49,7 +63,7 @@ public class Controller {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<String> updatePaste(@PathVariable String id, @RequestBody String newContent){
+    public ResponseEntity<PasteResponse> updatePaste(@PathVariable String id, @RequestBody String newContent){
         if(newContent == null || newContent.isBlank()){
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
@@ -57,10 +71,16 @@ public class Controller {
         }
 
         try {
-            String content = pasteService.updatePaste(id, newContent);
+            Paste paste = pasteService.updatePaste(id, newContent);
+            PasteResponse pasteResponse = new PasteResponse(
+                    paste.getId(),
+                    newContent,
+                    paste.getCreatedAt(),
+                    paste.getUpdatedAt());
+
             return ResponseEntity
                     .status(HttpStatus.OK)
-                    .body(content);
+                    .body(pasteResponse);
         }
         catch (NotFoundException e){
             return ResponseEntity

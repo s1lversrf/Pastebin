@@ -27,9 +27,4 @@ public class Paste {
     void createdAt() {
         this.createdAt = this.updatedAt = LocalDateTime.now();
     }
-
-    @PreUpdate
-    void updatedAt() {
-        this.updatedAt = LocalDateTime.now();
-    }
 }
