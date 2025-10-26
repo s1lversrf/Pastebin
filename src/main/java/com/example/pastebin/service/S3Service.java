@@ -2,6 +2,7 @@ package com.example.pastebin.service;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -12,16 +13,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class S3Service {
 
     private final AmazonS3 amazonS3;
 
     @Value("${aws.s3.bucket}")
     private String bucketName;
-
-    public S3Service(AmazonS3 amazonS3) {
-        this.amazonS3 = amazonS3;
-    }
 
     public String uploadPaste(String content) {
         UUID uuid = UUID.randomUUID();
