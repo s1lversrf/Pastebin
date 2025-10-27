@@ -5,7 +5,6 @@ import com.amazonaws.services.s3.model.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,7 +37,7 @@ public class S3Service {
         try(S3ObjectInputStream inputStream = amazonS3.getObject(bucketName, key).getObjectContent()){
             return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to read paste from S3 with key: " + key);
+            throw new RuntimeException(String.format("Failed to read paste from S3 with key: %s", key));
         }
     }
 
