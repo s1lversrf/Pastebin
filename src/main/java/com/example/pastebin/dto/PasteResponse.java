@@ -1,10 +1,11 @@
 package com.example.pastebin.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record PasteResponse(
         String id,
         String content,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        Instant createdAt,
+        Instant updatedAt,
+        Instant expiresAt
 ) {}

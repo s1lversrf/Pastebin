@@ -4,6 +4,7 @@ import com.example.pastebin.dto.Paste;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
@@ -36,6 +37,7 @@ public class PasteCacheService {
     public void evictCachedPaste(String id) {
         stringRedisTemplate.delete(CONTENT_PREFIX + id);
         stringRedisTemplate.delete(METADATA_PREFIX + id);
+        stringRedisTemplate.delete(ACCESS_COUNT_PREFIX + id);
     }
 
     public long incrementAccessCount(String pasteId) {

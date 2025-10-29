@@ -2,29 +2,41 @@ package com.example.pastebin.service;
 
 import com.amazonaws.services.kms.model.NotFoundException;
 import com.example.pastebin.dto.Paste;
+import com.example.pastebin.dto.PasteCreateRequest;
 import com.example.pastebin.repository.PasteRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import java.time.LocalDateTime;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PasteService {
     private final PasteRepository repository;
     private final IdGeneratorService idGeneratorService;
     private final PasteCacheService pasteCacheService;
     private final S3Service s3Service;
 
-    public Paste addPaste(String content){
+    public Paste addPaste(PasteCreateRequest request) {
         String id = idGeneratorService.generateId();
         if (repository.existsById(id)){
-            addPaste(content);
+            return addPaste(request);
         }
-        String s3key = s3Service.uploadPaste(content);
-        Paste paste = new Paste(id, s3key);
-        repository.save(paste);
 
-        return paste;
+        Instant expiresAt = ZonedDateTime.now()
+                .plusMinutes(request.expirationMinutes())
+                .toInstant();
+
+        String s3key = s3Service.uploadPaste(request.content());
+        Paste paste = new Paste(id, s3key, expiresAt);
+
+        return repository.save(paste);
     }
 
     public Paste getPasteFromDb(String id) throws NotFoundException {
@@ -61,7 +73,7 @@ public class PasteService {
         Paste paste = getPasteFromDb(id);
 
         s3Service.updatePaste(paste.getS3Key(), content);
-        paste.setUpdatedAt(LocalDateTime.now());
+        paste.setUpdatedAt(Instant.now());
         repository.save(paste);
 
         pasteCacheService.evictCachedPaste(id);
@@ -77,5 +89,22 @@ public class PasteService {
         s3Service.deletePaste(s3Key);
         repository.deleteById(id);
         pasteCacheService.evictCachedPaste(id);
+    }
+
+    @Scheduled(fixedRate = 60000)
+    @Transactional
+    public void cleanupExpiredPastesOptimized() {
+        log.info("Starting cleanup of expired pastes");
+
+        List<String> expiredPastesIds = repository.findExpiredPasteIds(Instant.now());
+
+        for (String pasteId : expiredPastesIds) {
+            pasteCacheService.evictCachedPaste(pasteId);
+        }
+        int deletedCount = repository.deleteExpiredPastes(Instant.now());
+
+        if (deletedCount > 0) {
+            log.info("Cleaned up {} expired pastes", deletedCount);
+        }
     }
 }
